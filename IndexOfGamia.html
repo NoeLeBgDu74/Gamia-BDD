@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Gamia</title>
+
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    background: url("https://as2.ftcdn.net/jpg/05/61/93/63/1000_F_561936377_Pfeqnv20xA8G6jqqQCQUP8PQF8E2CEqM.jpg") no-repeat center center;
+    background-size: cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    position: relative;
+}
+
+.overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+}
+
+/* Gamia Search comme bouton intégré */
+.footer-button {
+    position: absolute;
+    bottom: 30px;
+    padding: 20px 60px;
+    font-size: 28px;
+    border-radius: 25px;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    background: rgba(50, 0, 80, 0.4); /* sombre et violet, harmonisé avec le fond */
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(255,255,255,0.1); /* glow discret */
+    letter-spacing: 2px;
+    transition: 0.3s;
+}
+
+/* effet au survol */
+.footer-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255,255,255,0.2); /* glow léger au hover */
+    background: rgba(70, 0, 100, 0.5);          /* légèrement plus clair au hover */
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay"></div>
+
+<!-- Gamia Search cliquable -->
+<div class="footer-button" onclick="window.location.href='GamiaSearch.html'">
+    Gamia Search
+</div>
+
+</body>
+</html>
