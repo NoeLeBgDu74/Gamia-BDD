@@ -94,7 +94,7 @@ gamesList.forEach(g => {
 // Base de données fiable
 let database = []; // vide au départ
 
-fetch("https://raw.githubusercontent.com/NoeLeBgDu74/Gamia-BDD/refs/heads/main/GamiaBDD.Json")
+fetch("https://raw.githubusercontent.com/NoeLeBgDu74/Gamia-BDD/main/GamiaBDD.Json")
   .then(response => response.json())
   .then(data => {
     database = data; // maintenant database contient ton JSON
