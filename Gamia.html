@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gamia Search - Moteur Gaming</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+<style>
+body { font-family: Arial, sans-serif; background:#1e1e2f; color:#f0f0f0; margin:0; padding:0; }
+header { font-family: 'Orbitron', sans-serif; font-size: 3em; font-weight:bold; text-align:center; padding:20px;
+background:linear-gradient(90deg,#ff00ff,#00ffff,#ff007f); -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+text-shadow:2px 2px 5px #000; animation:neon 2s infinite alternate;}
+@keyframes neon { from{ text-shadow:2px2px5px#000,0 0 10px #ff00ff; } to { text-shadow:2px2px10px#000,0 0 20px #00ffff; } }
+main{ display:flex; flex-direction:column; align-items:center; padding:20px; }
+input, select{ width:80%; padding:10px; margin:10px 0; border-radius:5px; border:none; font-size:1em; }
+button{ padding:10px 20px; font-size:1em; border-radius:5px; border:none; background:#ff7f50; color:white; cursor:pointer; margin:5px; }
+button:hover{ background:#ff5722; }
+.results, #repertoire, #contributionResults{ margin-top:20px; width:90%; max-width:1000px; background:#2a2a4a; padding:20px; border-radius:10px; display:none;}
+.entry{ margin-bottom:15px; border-bottom:1px solid #444; padding-bottom:10px; }
+a{ color:#ff7f50; text-decoration:none;}
+a:hover{ text-decoration:underline; }
+#suggestions{ background:#3a3a5c; width:80%; max-width:600px; border-radius:5px; margin-top:-5px; }
+#suggestions div{ padding:10px; cursor:pointer; border-bottom:1px solid #555; }
+#suggestions div:hover{ background:#5555aa; }
+h2{ font-family: 'Orbitron', sans-serif; margin-top:30px; text-align:center; }
+
+/* --- AJOUT DU FOND IMAGE ET OVERLAY --- */
+body {
+    background: url("https://media.istockphoto.com/id/1560833158/fr/photo/contr%C3%B4leur-de-jeu-avec-clavier-%C3%A9clair%C3%A9-violet-au-milieu-de-divers-appareils-sans-fil.jpg?s=612x612&w=0&k=20&c=9K9Jw-u48VU8OToaFNXMEvpJPVYQl7BNN87udijjd94=") no-repeat center center fixed;
+    background-size: cover;
+    position: relative;
+}
+
+body::before {
+    content:"";
+    position: fixed;
+    top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.6);
+    z-index:0;
+}
+
+header, main, .results, #repertoire, #contributionResults {
+    position: relative;
+    z-index: 1;
+}
+</style>
+</head>
+<body>
+<header>Gamia Search</header>
+<main>
+  <div>
+    <button onclick="showAccueil()">Accueil</button>
+    <button onclick="startVoice()">🎤 Parler</button>
+  </div>
+  <input type="text" id="gameInput" placeholder="Tape ou parle le nom d'un jeu..." onkeyup="showSuggestions(this.value)">
+  <div id="suggestions"></div>
+
+  <input type="text" id="search" placeholder="Cherche un objet, guide ou astuce...">
+  <button onclick="searchDatabase()">Chercher</button>
+
+  <div class="results" id="results"></div>
+  <div id="repertoire"></div>
+
+  <h2>Contribuer à Gamia</h2>
+  <div id="contribution">
+    <select id="contribGame">
+      <option value="">Choisir un jeu...</option>
+    </select>
+    <select id="contribType">
+      <option value="guide">Guide</option>
+      <option value="astuce">Astuce</option>
+      <option value="objet">Objet</option>
+    </select>
+    <input type="text" id="contribTitle" placeholder="Titre de la contribution">
+    <input type="text" id="contribUrl" placeholder="Lien vers guide ou info">
+    <button onclick="addContribution()">Publier</button>
+    <div class="results" id="contributionResults"></div>
+  </div>
+</main>
+
+<script>
+// Liste de jeux
+let gamesList = ["Wobbly Life", "Roblox", "Minecraft", "Fortnite", "Genshin Impact", "Among Us", "Call of Duty", "FIFA 26", "Rocket League"];
+
+// Remplir le select contribution
+const contribSelect = document.getElementById("contribGame");
+gamesList.forEach(g => {
+  const option = document.createElement("option");
+  option.value = g;
+  option.innerText = g;
+  contribSelect.appendChild(option);
+});
+
+// Base de données fiable
+let database = []; // vide au départ
+
+fetch("https://raw.githubusercontent.com/NoeLeBgDu74/Gamia-BDD/refs/heads/main/GamiaBDD.Json")
+  .then(response => response.json())
+  .then(data => {
+    database = data; // maintenant database contient ton JSON
+    console.log("Base de données chargée :", database); // ✅ test ici
+  })
+  .catch(error => console.error("Erreur en chargeant la base :", error));
+  
+// Autocomplete
+function showSuggestions(value) {
+  const suggestions = document.getElementById("suggestions");
+  suggestions.innerHTML = "";
+  if (value.length === 0) return;
+  const matches = gamesList.filter(g => fuzzyMatch(g, value));
+  matches.forEach(g => {
+    const div = document.createElement("div");
+    div.innerHTML = g;
+    div.onclick = () => {
+      document.getElementById("gameInput").value = g;
+      suggestions.innerHTML = "";
+    };
+    suggestions.appendChild(div);
+  });
+}
+
+// Tolérance aux fautes
+function fuzzyMatch(str1, str2) {
+  str1 = str1.toLowerCase();
+  str2 = str2.toLowerCase();
+  return str1.includes(str2) || str2.includes(str1) || levenshtein(str1, str2) <= 2;
+}
+
+// Fonction de distance Levenshtein
+function levenshtein(a, b) {
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+// Recherche principale
+function searchDatabase() {
+  const query = document.getElementById("search").value.toLowerCase();
+  const game = document.getElementById("gameInput").value;
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.style.display = "block";
+  document.getElementById("repertoire").style.display = "none";
+  resultsDiv.innerHTML = "";
+
+  const found = database.filter(entry =>
+    fuzzyMatch(entry.game, game) && entry.keywords.some(k => fuzzyMatch(k, query))
+  );
+
+  if (found.length > 0) {
+    found.forEach(e => {
+      const div = document.createElement("div");
+      div.classList.add("entry");
+      div.innerHTML = `<strong>${e.title}</strong> - <a href="${e.url}" target="_blank">Voir le guide</a>`;
+      resultsDiv.appendChild(div);
+    });
+  } else {
+    resultsDiv.innerHTML = "Aucun résultat trouvé.";
+  }
+}
+
+// Accueil / répertoire
+function showAccueil() {
+  const rep = document.getElementById("repertoire");
+  rep.innerHTML = "";
+  rep.style.display = "block";
+  document.getElementById("results").style.display = "none";
+  database.forEach(e => {
+    const div = document.createElement("div");
+    div.classList.add("entry");
+    div.innerHTML = `<strong>[${e.game}] ${e.title}</strong> - <a href="${e.url}" target="_blank">Voir le guide</a>`;
+    rep.appendChild(div);
+  });
+}
+
+// Reconnaissance vocale
+function startVoice() {
+  if (!('webkitSpeechRecognition' in window)) {
+    alert("Ton navigateur ne supporte pas la reconnaissance vocale.");
+    return;
+  }
+  const recognition = new webkitSpeechRecognition();
+  recognition.lang = 'fr-FR';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.start();
+  recognition.onresult = function(event) {
+    document.getElementById("gameInput").value = event.results[0][0].transcript;
+  };
+}
+
+// Ajout contribution utilisateur
+function addContribution() {
+  const game = document.getElementById("contribGame").value;
+  const type = document.getElementById("contribType").value;
+  const title = document.getElementById("contribTitle").value.trim();
+  const url = document.getElementById("contribUrl").value.trim();
+  const resultDiv = document.getElementById("contributionResults");
+  resultDiv.style.display = "block";
+  if (!game || !title || !url) {
+    resultDiv.innerHTML = "Veuillez remplir tous les champs.";
+    return;
+  }
+
+  const newEntry = { game: game, keywords: [type], title: title, url: url };
+  database.push(newEntry);
+  if (!gamesList.includes(game)) {
+    gamesList.push(game);
+    const option = document.createElement("option");
+    option.value = game;
+    option.innerText = game;
+    contribSelect.appendChild(option);
+  }
+  resultDiv.innerHTML = "Merci ! Votre contribution a été ajoutée.";
+  document.getElementById("contribTitle").value = "";
+  document.getElementById("contribUrl").value = "";
+}
+</script>
+</body>
+</html>
